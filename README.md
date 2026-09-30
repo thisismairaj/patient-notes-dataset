@@ -1,13 +1,82 @@
 # NBME Clinical Patient Notes — Stretch Dataset
 
-Stretch slot (unstructured text, requires extraction) for the brief being worked on
-in `D:\data-lab2`, `D:\yelp-dataset`, `D:\fhir-dataset`. Real clinical patient notes,
-**42,146 rows** (corrected from an initial wrong `wc -l`-based count of 295,008 - see
-`docs/scope_and_gaps.md`/`docs/learning_log.md`). See `docs/scope_and_gaps.md` for
-what the brief actually requires here (deliberately less than the other repos -
-Stretch is optional and lean by design).
+Real clinical patient history notes (42,146 of them), extracted and profiled as the
+**Stretch** dataset (unstructured text, requires extraction) for a team brief comparing
+Databricks and Snowflake as a data platform. Sibling repos (not yet published) cover
+the other slots: a BRFSS health-survey build (core comparison) and a Yelp Open Dataset
+build (Secondary, semi-structured).
+
+## What this is
+
+[NBME's Clinical Patient Notes](https://www.kaggle.com/c/nbme-score-clinical-patient-notes/data)
+Kaggle competition data: real free-text clinical notes written during standardized-patient
+medical exams, one row per note, referencing 10 distinct clinical case scenarios.
+
+| | |
+|---|---|
+| Rows | **42,146** |
+| Columns | `pn_num`, `case_num`, `pn_history` (the free text) |
+| Blanks | 0 |
+| Case scenarios | 10 |
+| Note length | 30–950 characters, avg 818 |
+
+## The brief's actual bar for this slot
+
+Per the brief, Stretch just needs: *"Bring in a file-based dataset and extract
+something usable from it,"* described (row counts/blanks/ranges), with cost/time
+recorded — and it's explicitly optional/droppable if it costs time. This repo is
+deliberately lean, not a full medallion pipeline like the Primary/Secondary datasets
+got.
+
+## What was extracted
+
+Real structured facts pulled out of free text via SQL regex — no ML needed for this
+scope:
+
+| Field | Found in |
+|---|---|
+| Age | 82.3% of notes |
+| Gender | 38.3% |
+| ROS section present (Review of Systems) | 44.1% |
+| PMH section present (Past Medical History) | 50.3% |
+| FH / SH sections (Family / Social History) | also extracted |
+
+Yields aren't 100% because not every note uses the same labeled-shorthand style
+(`ros:`, `pmh:`) — some are full prose instead. That's expected, not a bug.
+
+## A real bug, caught and fixed
+
+The original row count recorded here was **wrong**: 295,008, from `wc -l` on the raw
+CSV. That's wrong because `pn_history` contains embedded newlines inside quoted CSV
+fields, so physical line count isn't the same as logical record count.
+
+Databricks' own CSV reader (even with `multiLine => true`) *also* got it wrong —
+84,033 rows, with 33,572 showing as blank `pn_history` that don't actually exist —
+a real quote-escaping edge case in the messy real-world clinical text.
+
+**Resolved by cross-checking two independent parsers** (Python's `csv` module and
+pandas), which agreed exactly: **42,146 rows, 0 nulls**. Fixed by converting the file
+to JSONL locally (no CSV quoting ambiguity possible) before loading it — full story in
+`docs/learning_log.md`.
 
 ## Layout
-- `docs/` — scope/gaps, learning log
-- `sql/databricks/` — bronze + extraction SQL
-- `data/raw/` — local staging (git-ignored)
+
+```
+docs/               scope/gaps, learning log (what actually happened, including the bug above)
+sql/databricks/     bronze load + regex extraction
+scripts/db_run.py   runs SQL against Databricks via the Statement Execution API
+data/raw/           local staging (git-ignored — the Kaggle CSV itself is not in this repo)
+```
+
+## Running it
+
+1. Get `patient_notes.csv` from [Kaggle](https://www.kaggle.com/c/nbme-score-clinical-patient-notes/data)
+   (competition rules apply — not redistributed here)
+2. `scripts/db_run.py sql/databricks/01_bronze_extract.sql` (reads from a Databricks
+   Unity Catalog volume — update the paths for your own workspace)
+
+## License
+
+Code in this repo: no restriction. The underlying Kaggle competition data is **not**
+included (git-ignored) — get it from Kaggle directly, subject to the competition's own
+terms.
