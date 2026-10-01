@@ -2,9 +2,11 @@
 
 Real clinical patient history notes (42,146 of them), extracted and profiled as the
 **Stretch** dataset (unstructured text, requires extraction) for a team brief comparing
-Databricks and Snowflake as a data platform. Sibling repos (not yet published) cover
-the other slots: a BRFSS health-survey build (core comparison) and a Yelp Open Dataset
-build (Secondary, semi-structured).
+Databricks and Snowflake as a data platform. Sibling repos cover the other slots:
+[data-lab2](https://github.com/thisismairaj/data-lab2) (BRFSS health-survey build,
+core comparison), [yelp-dataset](https://github.com/thisismairaj/yelp-dataset)
+(Secondary, semi-structured), [fhir-dataset](https://github.com/thisismairaj/fhir-dataset)
+(deeply nested + streaming ingestion).
 
 ## What this is
 
@@ -56,16 +58,14 @@ a real quote-escaping edge case in the messy real-world clinical text.
 
 **Resolved by cross-checking two independent parsers** (Python's `csv` module and
 pandas), which agreed exactly: **42,146 rows, 0 nulls**. Fixed by converting the file
-to JSONL locally (no CSV quoting ambiguity possible) before loading it — full story in
-`docs/learning_log.md`.
+to JSONL locally (no CSV quoting ambiguity possible) before loading it.
 
 ## Layout
 
 ```
-docs/               scope/gaps, learning log (what actually happened, including the bug above)
 sql/databricks/     bronze load + regex extraction
 scripts/db_run.py   runs SQL against Databricks via the Statement Execution API
-data/raw/           local staging (git-ignored — the Kaggle CSV itself is not in this repo)
+data/raw/           local staging for the Kaggle CSV
 ```
 
 ## Running it
@@ -78,5 +78,4 @@ data/raw/           local staging (git-ignored — the Kaggle CSV itself is not 
 ## License
 
 Code in this repo: no restriction. The underlying Kaggle competition data is **not**
-included (git-ignored) — get it from Kaggle directly, subject to the competition's own
-terms.
+included — get it from Kaggle directly, subject to the competition's own terms.
