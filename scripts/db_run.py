@@ -1,8 +1,8 @@
 """Run SQL against Databricks Trial workspace. Same script as the sibling repos."""
 import sys, os, json, subprocess, time
 
-WAREHOUSE_ID = "6cd9ffe6ba1a7c82"
-PROFILE = "actual-trial-personal-email"
+WAREHOUSE_ID = "30410e206576b770"  # live Trial workspace (profile 1) "Serverless Starter Warehouse"
+PROFILE = "1"
 
 
 def strip_line_comment(line):
